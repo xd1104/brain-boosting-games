@@ -1,0 +1,150 @@
+/* ============ 五子棋 ============ */
+.k-status {
+  flex: 0 0 auto;
+  text-align: center;
+  font-size: .92rem;
+  color: var(--ink-soft);
+  padding: 2px 14px 8px;
+  min-height: 26px;
+}
+.k-status b { color: var(--ink); }
+.k-status.think { color: var(--accent); }
+
+.k-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 12px;
+  min-height: 0;
+  position: relative;
+}
+
+.k-board {
+  position: relative;
+  width: 100%;
+  max-width: min(100%, 58dvh);
+  aspect-ratio: 1;
+  background: var(--surface);
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  touch-action: none;
+  user-select: none;
+}
+
+.k-lines { position: absolute; inset: 0; width: 100%; height: 100%; }
+.k-lines line { stroke: var(--ink-faint); stroke-width: 1; opacity: .6; }
+.k-lines circle { fill: var(--ink-faint); opacity: .7; }
+
+.k-cells {
+  position: absolute; inset: 0;
+  display: grid;
+}
+.k-cell { position: relative; padding: 0; background: none; border: none; }
+
+.k-stone {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 78%; height: 78%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  pointer-events: none;
+}
+.k-stone.me { background: var(--ink); box-shadow: inset -1px -2px 3px rgba(255,255,255,.18); }
+.k-stone.ai {
+  background: var(--surface);
+  border: 2px solid var(--ink);
+  box-shadow: inset 1px 2px 3px rgba(0,0,0,.12);
+}
+.k-stone.last::after {
+  content: "";
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 30%; height: 30%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--cow);
+}
+.k-cell.win .k-stone { box-shadow: 0 0 0 3px var(--bull); }
+
+.k-ghost {
+  position: absolute;
+  left: 50%; top: 50%;
+  width: 78%; height: 78%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  border: 2.5px dashed var(--accent);
+  pointer-events: none;
+}
+
+/* 手指會擋住棋盤，按住時在上面放一個放大鏡 */
+.k-zoom {
+  position: absolute;
+  top: 6px;
+  width: 132px;
+  padding: 8px;
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: 14px;
+  box-shadow: 0 8px 24px rgba(12,16,22,.28);
+  z-index: 5;
+  pointer-events: none;
+}
+.k-zoom.left { left: 14px; }
+.k-zoom.right { right: 14px; }
+.k-zoom .zg {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  aspect-ratio: 1;
+  background:
+    repeating-linear-gradient(to right, transparent 0 calc(20% - .5px), var(--ink-faint) calc(20% - .5px) calc(20% + .5px), transparent calc(20% + .5px) 20%),
+    repeating-linear-gradient(to bottom, transparent 0 calc(20% - .5px), var(--ink-faint) calc(20% - .5px) calc(20% + .5px), transparent calc(20% + .5px) 20%);
+}
+.k-zoom .zc { position: relative; }
+.k-zoom .zs {
+  position: absolute; left: 50%; top: 50%;
+  width: 74%; height: 74%;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+}
+.k-zoom .zs.me { background: var(--ink); }
+.k-zoom .zs.ai { background: var(--surface); border: 2px solid var(--ink); }
+.k-zoom .zs.pick { border: 2.5px dashed var(--accent); background: transparent; }
+.k-zoom .zs.out { background: var(--surface-2); border-radius: 3px; opacity: .5; }
+.k-zoom .lb { text-align: center; font-size: .72rem; color: var(--ink-soft); margin-top: 5px; }
+
+.k-pad {
+  flex: 0 0 auto;
+  padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px rgba(26,33,48,.06);
+}
+.k-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.k-act {
+  height: 56px;
+  border-radius: 12px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink-soft);
+}
+.k-act:active { transform: scale(.97); }
+.k-act[disabled] { opacity: .38; }
+.k-act.main { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+
+.k-hint { text-align: center; font-size: .8rem; color: var(--ink-faint); margin-top: 9px; min-height: 19px; }
+
+.k-win { text-align: center; }
+.k-win .cap { font-size: .92rem; color: var(--ink-soft); }
+.k-win .big { font-size: 1.5rem; font-weight: 700; margin: 4px 0 10px; }
+.k-win .big.good { color: var(--bull); }
+.k-win .earn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: .95rem; font-weight: 700;
+  color: var(--cow); background: var(--cow-soft);
+  border-radius: 11px; padding: 9px 12px; margin-bottom: 8px;
+}
+.k-win .earn.bonus { font-size: .85rem; flex-wrap: wrap; }
