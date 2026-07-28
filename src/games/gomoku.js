@@ -8,9 +8,8 @@
   var ME = 1, AI = 2;
 
   var LEVELS = [
-    { key: 'l1', name: '隨便下', sub: '入門', coin: 12 },
     { key: 'l2', name: '會擋你', sub: '普通', coin: 25 },
-    { key: 'l3', name: '會設陷阱', sub: '高手', coin: 45 }
+    { key: 'l3', name: '會設陷阱', sub: '高手', coin: 50 }
   ];
 
   var DIRS = [[0, 1], [1, 0], [1, 1], [1, -1]];
@@ -55,6 +54,56 @@
       s += TABLE[cnt + '_' + L.open] || 0;
     }
     return s;
+  }
+
+  /* ---- 威脅偵測 ----
+     把一條線讀成字串：1=自己的子 0=空 x=擋住的（對手的子或牆），
+     再用棋型比對。比只算「連幾顆」準得多 —— 像 X_XX 這種跳著的活三也抓得到。 */
+  function windowStr(b, i, dr, dc, color) {
+    var r = (i / N) | 0, c = i % N, s = '';
+    for (var k = -4; k <= 4; k++) {
+      var rr = r + dr * k, cc = c + dc * k;
+      if (!inb(rr, cc)) { s += 'x'; continue; }
+      var v = b[rr * N + cc];
+      s += (v === 0 ? '0' : (v === color ? '1' : 'x'));
+    }
+    return s;
+  }
+
+  var P_FIVE  = /11111/;
+  var P_OPEN4 = /011110/;
+  var P_FOUR  = /11110|01111|11011|10111|11101/;
+  var P_OPEN3 = /011100|001110|010110|011010/;
+
+  /* 假設在 i 放一顆 color，會造出什麼威脅 */
+  function threats(b, i, color) {
+    var had = b[i];
+    b[i] = color;
+    var t = { five: 0, open4: 0, four: 0, open3: 0 };
+    for (var d = 0; d < 4; d++) {
+      var s = windowStr(b, i, DIRS[d][0], DIRS[d][1], color);
+      if (P_FIVE.test(s)) t.five++;
+      else if (P_OPEN4.test(s)) t.open4++;
+      else if (P_FOUR.test(s)) t.four++;
+      else if (P_OPEN3.test(s)) t.open3++;
+    }
+    b[i] = had;
+    return t;
+  }
+
+  /* 雙重威脅：同時兩個方向都要成五，對手只擋得了一邊 —— 這是贏棋的標準手法 */
+  function isDouble(t) {
+    if (t.five || t.open4) return true;
+    var forcing = t.four + t.open3;
+    return forcing >= 2;
+  }
+
+  /* 在候選點裡找出第一個符合條件的點 */
+  function findPoint(b, cs, color, test) {
+    for (var q = 0; q < cs.length; q++) {
+      if (test(threats(b, cs[q], color))) return cs[q];
+    }
+    return -1;
   }
 
   function wins(b, i, color) {
@@ -113,51 +162,69 @@
   /* ================= AI ================= */
 
   function aiMove(b, level) {
-    /* 自己能贏就直接贏 */
     var cs = candidates(b), i, q;
-    for (q = 0; q < cs.length; q++) if (wins2(b, cs[q], AI)) return cs[q];
-    /* 對手下一手會贏就一定要擋 */
-    for (q = 0; q < cs.length; q++) if (wins2(b, cs[q], ME)) return cs[q];
 
-    if (level === 'l1') {
-      /* 隨便下：大多亂下，但對方連成四還是會擋 */
-      var r1 = ranked(b, AI, ME, 0.9);
-      if (r1[0].s >= 10000) return r1[0].i;
-      if (Math.random() < 0.35) return r1[0].i;
-      var pool = r1.slice(0, Math.min(10, r1.length));
-      return pool[Math.floor(Math.random() * pool.length)].i;
-    }
+    /* 兩個等級都會做的：能贏就贏、對手要贏就擋 */
+    i = findPoint(b, cs, AI, function (t) { return t.five > 0; });
+    if (i >= 0) return i;
+    i = findPoint(b, cs, ME, function (t) { return t.five > 0; });
+    if (i >= 0) return i;
 
     if (level === 'l2') {
+      /* 會擋你：只看單一威脅。擋得住活三衝四，但擋不住雙重威脅 —— 這是它跟高手的差別 */
       var r2 = ranked(b, AI, ME, 1.0);
-      /* 分數接近的隨機選一個，免得每局都下一樣 */
       var top = r2.filter(function (x) { return x.s >= r2[0].s * 0.92; }).slice(0, 4);
       return top[Math.floor(Math.random() * top.length)].i;
     }
 
-    /* l3：想一步 —— 我下這裡之後，對手最好的回擊有多強？
-       這樣才會避開「送對方做活四」，也會主動找雙三 */
+    /* ---- l3 會設陷阱 ---- */
+
+    /* 3. 自己能做活四（對手擋不掉）就做 */
+    i = findPoint(b, cs, AI, function (t) { return t.open4 > 0; });
+    if (i >= 0) return i;
+
+    /* 4. 對手下一手能做活四，先把那點佔掉 */
+    i = findPoint(b, cs, ME, function (t) { return t.open4 > 0; });
+    if (i >= 0) return i;
+
+    /* 5. 自己能做雙重威脅（四三、雙三）就做 —— 這是它自己的陷阱 */
+    i = findPoint(b, cs, AI, isDouble);
+    if (i >= 0) return i;
+
+    /* 6. 對手下一手能做雙重威脅 —— 一定要提前把那個點吃掉，
+          等他做出來就來不及了（只擋得了一邊）。這是之前輸掉的原因 */
+    var danger = [];
+    for (q = 0; q < cs.length; q++) if (isDouble(threats(b, cs[q], ME))) danger.push(cs[q]);
+    if (danger.length) {
+      /* 好幾個危險點時，挑對自己也最有價值的那個佔住 */
+      var pick = danger[0], ps = -Infinity;
+      for (q = 0; q < danger.length; q++) {
+        var v = evalPoint(b, danger[q], AI) + evalPoint(b, danger[q], ME);
+        if (v > ps) { ps = v; pick = danger[q]; }
+      }
+      return pick;
+    }
+
+    /* 7. 沒有立即戰鬥時：往前看一手，避開會讓對手做出活四或雙重威脅的下法 */
     var r3 = ranked(b, AI, ME, 1.0).slice(0, 10);
-    var best = null, bestScore = -Infinity;
+    var best = -1, bestScore = -Infinity;
     for (q = 0; q < r3.length; q++) {
       i = r3[q].i;
       b[i] = AI;
-      var mine = evalPoint(b, i, AI);
+      var penalty = 0;
+      var rc = candidates(b);
+      for (var w = 0; w < rc.length; w++) {
+        var ot = threats(b, rc[w], ME);
+        if (ot.five) { penalty = 1e6; break; }
+        if (ot.open4 || isDouble(ot)) { penalty = 1e5; break; }
+      }
       var reply = 0, rs = ranked(b, ME, AI, 1.0);
       if (rs.length) reply = rs[0].s;
       b[i] = 0;
-      var sc = r3[q].s + mine * 0.3 - reply * 0.9;
+      var sc = r3[q].s - penalty - reply * 0.6;
       if (sc > bestScore) { bestScore = sc; best = i; }
     }
-    return best === null ? r3[0].i : best;
-  }
-
-  /* 放上去會不會直接連五 */
-  function wins2(b, i, color) {
-    b[i] = color;
-    var w = wins(b, i, color);
-    b[i] = 0;
-    return w;
+    return best < 0 ? r3[0].i : best;
   }
 
   /* ================= 畫面 ================= */
