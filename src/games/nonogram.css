@@ -1,0 +1,137 @@
+/* ============ 數織 ============ */
+.n-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  min-height: 0;
+}
+
+.n-grid {
+  display: grid;
+  width: 100%;
+  max-width: min(100%, 66dvh);
+  aspect-ratio: 1;
+  gap: 0;
+}
+
+.n-clue {
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+.n-clue.done { color: var(--ink-faint); opacity: .45; }
+.n-corner { background: transparent; }
+
+.n-cell {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  padding: 0;
+  position: relative;
+}
+.n-cell.fill { background: var(--accent); border-color: var(--accent); }
+.n-cell.cross::before,
+.n-cell.cross::after {
+  content: "";
+  position: absolute;
+  left: 25%; top: 48%;
+  width: 50%; height: 2px;
+  background: var(--ink-faint);
+}
+.n-cell.cross::before { transform: rotate(45deg); }
+.n-cell.cross::after { transform: rotate(-45deg); }
+.n-cell.bad { background: #D64545; border-color: #D64545; }
+@media (prefers-color-scheme: dark) { .n-cell.bad { background: #B33; border-color: #B33; } }
+:root[data-theme="dark"] .n-cell.bad { background: #B33; border-color: #B33; }
+:root[data-theme="light"] .n-cell.bad { background: #D64545; border-color: #D64545; }
+
+/* 每五格加粗線，眼睛才數得動 */
+.n-cell.b5l { border-left-width: 2px; border-left-color: var(--ink-faint); }
+.n-cell.b5t { border-top-width: 2px; border-top-color: var(--ink-faint); }
+.n-cell.edgeR { border-right-width: 2px; border-right-color: var(--ink-faint); }
+.n-cell.edgeB { border-bottom-width: 2px; border-bottom-color: var(--ink-faint); }
+
+.n-pad {
+  flex: 0 0 auto;
+  padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px rgba(26,33,48,.06);
+}
+.n-modes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.n-mode {
+  height: 58px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 2px solid var(--line);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.n-mode.on { border-color: var(--accent); background: var(--accent-soft); color: var(--ink); }
+.n-swatch { width: 20px; height: 20px; border-radius: 5px; flex: 0 0 auto; position: relative; }
+.n-swatch.f { background: var(--accent); }
+.n-swatch.x { border: 2px solid var(--ink-faint); }
+.n-swatch.x::before, .n-swatch.x::after {
+  content: ""; position: absolute; left: 15%; top: 45%; width: 70%; height: 2px; background: var(--ink-faint);
+}
+.n-swatch.x::before { transform: rotate(45deg); }
+.n-swatch.x::after { transform: rotate(-45deg); }
+
+.n-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.n-act {
+  height: 48px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: .95rem;
+  color: var(--ink-soft);
+}
+.n-act:active { transform: scale(.97); }
+
+.n-tip { text-align: center; font-size: .82rem; color: var(--cow); margin-top: 8px; min-height: 20px; }
+.n-loading { text-align: center; color: var(--ink-soft); padding: 40px 20px; font-size: .95rem; }
+
+.n-win { text-align: center; }
+.n-win .cap { font-size: .92rem; color: var(--ink-soft); }
+.n-win .big {
+  font-family: var(--mono);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--bull);
+  margin: 2px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.n-win .steps { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+.n-win .earn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: .95rem; font-weight: 700;
+  color: var(--cow); background: var(--cow-soft);
+  border-radius: 11px; padding: 9px 12px; margin-bottom: 8px;
+}
+.n-win .earn.bonus { font-size: .85rem; flex-wrap: wrap; }
+
+/* 解完把圖單獨秀出來 */
+.n-pic {
+  display: grid;
+  width: 148px;
+  margin: 0 auto 12px;
+  aspect-ratio: 1;
+  gap: 1px;
+  background: var(--line);
+  border: 2px solid var(--ink-soft);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.n-pic i { background: var(--surface); }
+.n-pic i.on { background: var(--ink); }

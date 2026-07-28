@@ -10,6 +10,7 @@ const CSS = [
   'styles.css',
   'games/guess.css',
   'games/sudoku.css',
+  'games/nonogram.css',
   'games/gomoku.css'
 ];
 
@@ -17,6 +18,7 @@ const CSS = [
 const JS = [
   'app.js',
   'games/sudoku.js',
+  'games/nonogram.js',
   'games/gomoku.js',
   'games/guess.js'
 ];
