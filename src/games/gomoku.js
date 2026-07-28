@@ -8,7 +8,7 @@
   var ME = 1, AI = 2;
 
   var LEVELS = [
-    { key: 'l2', name: '會擋你', sub: '普通', coin: 25 },
+    { key: 'l2', name: '會擋你',   sub: '普通', coin: 25 },
     { key: 'l3', name: '會設陷阱', sub: '高手', coin: 50 }
   ];
 
@@ -106,6 +106,65 @@
     return -1;
   }
 
+  /* ---- 算殺（連續衝四取勝）----
+     只搜尋「逼著」的走法：每一手都做出四，對手只能乖乖擋，
+     所以分支很少、可以算得很深。算得出來就是必勝，對手怎麼擋都沒用。 */
+  var vcfNodes = 0;
+  var VCF_BUDGET = 6000;    /* 保險絲：再深也不能讓手機卡住 */
+
+  function vcf(b, me, opp, depth) {
+    if (vcfNodes++ > VCF_BUDGET) return -1;
+
+    var cs = candidates(b), q;
+
+    /* 我這手就能成五 */
+    for (q = 0; q < cs.length; q++) if (threats(b, cs[q], me).five) return cs[q];
+    /* 對手已經有成五點，我非擋不可，攻不下去 */
+    for (q = 0; q < cs.length; q++) if (threats(b, cs[q], opp).five) return -1;
+    if (depth <= 0) return -1;
+
+    var fours = [];
+    for (q = 0; q < cs.length; q++) {
+      var t = threats(b, cs[q], me);
+      if (t.open4) return cs[q];          /* 活四：兩邊都能成五，擋不完 */
+      if (t.four) fours.push(cs[q]);
+    }
+
+    for (q = 0; q < fours.length; q++) {
+      var m = fours[q];
+      b[m] = me;
+
+      var after = candidates(b), w, ok = true;
+
+      /* 對手能直接成五的話，這條逼著就不成立 */
+      for (w = 0; w < after.length; w++) {
+        if (threats(b, after[w], opp).five) { ok = false; break; }
+      }
+
+      if (ok) {
+        /* 對手唯一能做的就是擋掉我的成五點 */
+        var blocks = [];
+        for (w = 0; w < after.length; w++) {
+          if (threats(b, after[w], me).five) blocks.push(after[w]);
+        }
+        if (blocks.length > 1) { b[m] = 0; return m; }   /* 擋不完 */
+        if (blocks.length === 1) {
+          b[blocks[0]] = opp;
+          var r = vcf(b, me, opp, depth - 1);
+          b[blocks[0]] = 0;
+          if (r >= 0) { b[m] = 0; return m; }
+        }
+      }
+      b[m] = 0;
+    }
+    return -1;
+  }
+
+  function findKill(b, me, opp, depth) {
+    vcfNodes = 0;
+    return vcf(b, me, opp, depth);
+  }
+
   function wins(b, i, color) {
     for (var d = 0; d < 4; d++) {
       if (line(b, i, DIRS[d][0], DIRS[d][1], color).cnt >= 5) return true;
@@ -178,6 +237,14 @@
     }
 
     /* ---- l3 會設陷阱 ---- */
+
+    /* 算殺：一路衝四逼到底的必勝序列。對手一漏防就被抓住，
+       對防守滴水不漏的對手則沒有差別（實測如此），所以它不是一個新等級，
+       只是併進來的免費強化 —— 每手多花 10 幾毫秒。 */
+    i = findKill(b, AI, ME, 6);
+    if (i >= 0) return i;
+    i = findKill(b, ME, AI, 4);
+    if (i >= 0) return i;
 
     /* 3. 自己能做活四（對手擋不掉）就做 */
     i = findPoint(b, cs, AI, function (t) { return t.open4 > 0; });
