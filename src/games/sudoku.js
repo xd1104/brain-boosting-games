@@ -487,6 +487,30 @@
       '<text x="26" y="31" text-anchor="middle" font-size="11" font-weight="700" font-family="monospace" fill="currentColor">7</text>' +
       '<text x="10.4" y="46.4" text-anchor="middle" font-size="11" font-weight="700" font-family="monospace" fill="currentColor">1</text>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>每一橫排、每一直排、每一個粗框小格區，數字都不能重複</b>' +
+        '<div class="hnote">9 格的盤面就是 1 到 9 各出現一次；6 格的盤面是 1 到 6</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>先點格子，再按下面的數字</b>' +
+        '<div class="hnote">點格子只是「選起來」，不會填東西進去 —— <u>點錯再點一次就好，沒有代價</u>。' +
+        '選起來之後，同一排、同一區會一起變色，比較好看。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>填錯會馬上變紅</b>' +
+        '<div class="hnote">不用等到最後才發現整盤要重來。' +
+        '想自己找錯的話，可以在左上角的難度裡把它關掉，<em>關掉腦力點多給四成</em>。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>想不出來就用「筆記」</b>' +
+        '<div class="hnote">把可能的數字先用小字記在格子裡，不算答案。難的關卡幾乎一定要用。' +
+        '<br><em>沒有倒數計時，也不會輸，慢慢想。</em></div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = DIFFS.length - 1; i >= 0; i--) {
         var b = App.store('sbest.' + DIFFS[i].key);

@@ -456,6 +456,55 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .si-buy.poor .coin { background: var(--ink-faint); border-color: transparent; }
 .si-got { margin-left: auto; flex: 0 0 auto; font-size: .84rem; color: var(--bull); font-weight: 700; }
 
+/* ---- 怎麼玩 ---- */
+.help { display: flex; flex-direction: column; gap: 18px; margin-bottom: 4px; }
+.hstep { display: flex; gap: 12px; align-items: flex-start; }
+.hnum {
+  flex: 0 0 auto;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: var(--on-accent);
+  display: grid; place-items: center;
+  font-size: .85rem; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.hbody { min-width: 0; }
+.hbody b { display: block; font-size: 1rem; line-height: 1.4; }
+.hnote { font-size: .84rem; color: var(--ink-soft); margin-top: 4px; line-height: 1.5; }
+.hnote em { font-style: normal; color: var(--bull); font-weight: 700; }
+.hnote u { text-decoration: none; color: var(--cow); font-weight: 700; }
+
+.hrow { display: flex; align-items: center; gap: 4px; margin-top: 9px; flex-wrap: wrap; }
+.hclue {
+  font-family: var(--mono); font-weight: 700;
+  color: var(--ink-soft); font-size: .9rem;
+  margin-right: 5px;
+}
+.hc {
+  width: 25px; height: 25px;
+  border: 1.5px solid var(--line);
+  border-radius: 4px;
+  background: var(--surface-2);
+  flex: 0 0 auto;
+  position: relative;
+  display: grid; place-items: center;
+  font-family: var(--mono); font-size: .82rem; font-weight: 700;
+}
+.hc.on { background: var(--accent); border-color: var(--accent); }
+.hc.maybe { background: var(--cow-soft); border-color: var(--cow); }
+.hc.x::before, .hc.x::after {
+  content: ""; position: absolute; left: 22%; top: 47%;
+  width: 56%; height: 2px; background: var(--ink-faint);
+}
+.hc.x::before { transform: rotate(45deg); }
+.hc.x::after { transform: rotate(-45deg); }
+.harrow { color: var(--ink-faint); margin: 0 3px; font-size: .95rem; }
+
+.hstone { width: 25px; height: 25px; border-radius: 50%; flex: 0 0 auto; }
+.hstone.b { background: var(--ink); }
+.hstone.w { background: var(--surface); border: 2px solid var(--ink); }
+
 .btn-main {
   width: 100%;
   height: 54px;
@@ -1318,6 +1367,18 @@ var App = (function () {
     else { store('item.' + s.id, items(s.id) + 1); shop('買好了，遊戲裡按「提示」就能用'); }
   }
 
+  /* ---------- 怎麼玩 ----------
+     數獨大家都會，但數織、五子棋的規則不能假設長輩知道。
+     第一次進遊戲自動跳出來，之後右上角問號隨時可以再看。 */
+  function helpSheet(g) {
+    if (!g || !g.help) return;
+    openSheet(
+      '<h2>怎麼玩 · ' + g.name + '</h2><div class="help">' + g.help + '</div>' +
+      '<button class="btn-main" data-act="ok">知道了，開始玩</button>',
+      function () { closeSheet(); }
+    );
+  }
+
   /* ---------- 路由 ---------- */
   function route() {
     if (current && current.unmount) current.unmount();
@@ -1335,13 +1396,23 @@ var App = (function () {
         '<div class="gamebar">' +
           '<button class="iconbtn" id="backBtn" aria-label="回到大廳">&#8592;</button>' +
           '<div class="barslot" id="barslot"></div>' +
+          (g.help ? '<button class="iconbtn" id="helpBtn" aria-label="怎麼玩">?</button>' : '') +
         '</div>' +
         '<div class="gamebody" id="gamebody"></div>' +
       '</div>';
 
     document.getElementById('backBtn').addEventListener('click', function () { location.hash = ''; });
+    if (g.help) {
+      document.getElementById('helpBtn').addEventListener('click', function () { helpSheet(g); });
+    }
     current = g;
     g.mount(document.getElementById('gamebody'), document.getElementById('barslot'));
+
+    /* 第一次玩這款就自動說明一次，看過就不再擋路 */
+    if (g.help && store('seen.' + g.id) !== '1') {
+      store('seen.' + g.id, '1');
+      helpSheet(g);
+    }
   }
 
   /* ---------- 啟動 ---------- */
@@ -1878,6 +1949,30 @@ var App = (function () {
       '<text x="26" y="31" text-anchor="middle" font-size="11" font-weight="700" font-family="monospace" fill="currentColor">7</text>' +
       '<text x="10.4" y="46.4" text-anchor="middle" font-size="11" font-weight="700" font-family="monospace" fill="currentColor">1</text>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>每一橫排、每一直排、每一個粗框小格區，數字都不能重複</b>' +
+        '<div class="hnote">9 格的盤面就是 1 到 9 各出現一次；6 格的盤面是 1 到 6</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>先點格子，再按下面的數字</b>' +
+        '<div class="hnote">點格子只是「選起來」，不會填東西進去 —— <u>點錯再點一次就好，沒有代價</u>。' +
+        '選起來之後，同一排、同一區會一起變色，比較好看。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>填錯會馬上變紅</b>' +
+        '<div class="hnote">不用等到最後才發現整盤要重來。' +
+        '想自己找錯的話，可以在左上角的難度裡把它關掉，<em>關掉腦力點多給四成</em>。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>想不出來就用「筆記」</b>' +
+        '<div class="hnote">把可能的數字先用小字記在格子裡，不算答案。難的關卡幾乎一定要用。' +
+        '<br><em>沒有倒數計時，也不會輸，慢慢想。</em></div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = DIFFS.length - 1; i >= 0; i--) {
         var b = App.store('sbest.' + DIFFS[i].key);
@@ -2419,6 +2514,42 @@ var App = (function () {
       '<text x="7" y="36" font-size="10" font-weight="700" font-family="monospace" fill="currentColor">1</text>' +
       '<text x="20" y="11" font-size="10" font-weight="700" font-family="monospace" fill="currentColor">2</text>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>數字＝要連續塗黑幾格</b>' +
+        '<div class="hrow"><span class="hclue">3</span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc on"></span>' +
+          '<span class="hc"></span><span class="hc"></span></div>' +
+        '<div class="hrow"><span class="hclue">1 2</span>' +
+          '<span class="hc on"></span><span class="hc"></span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc"></span></div>' +
+        '<div class="hnote">兩段之間，至少要空一格</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>先塗「怎麼擺都是黑的」那幾格</b>' +
+        '<div class="hrow"><span class="hclue">4</span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc"></span></div>' +
+        '<div class="hrow"><span class="hclue">或</span>' +
+          '<span class="hc"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span></div>' +
+        '<div class="hrow"><span class="hclue">→</span>' +
+          '<span class="hc"></span><span class="hc maybe"></span><span class="hc maybe"></span><span class="hc maybe"></span><span class="hc"></span></div>' +
+        '<div class="hnote">五格裡要塞四格，不管往左往右擺，<u>中間這三格</u>一定是黑的 —— 先塗這種就對了</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>橫排直排互相夾，就會越來越明朗</b>' +
+        '<div class="hnote">塗掉幾格之後，直排的數字又會告訴你新線索。來回夾幾次，整張圖就出來了。' +
+        '<br><em>每一題都保證推得出來，不用猜。</em></div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>確定是空的，就打叉做記號</b>' +
+        '<div class="hrow">' +
+          '<span class="hc on"></span><span class="hc x"></span><span class="hc"></span><span class="hc x"></span><span class="hc on"></span></div>' +
+        '<div class="hnote">打叉只是給自己看的，不算答案，但很好用 —— 排除掉之後剩下的就清楚了</div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = DIFFS.length - 1; i >= 0; i--) {
         var b = App.store('nbest.' + DIFFS[i].key);
@@ -3067,6 +3198,32 @@ var App = (function () {
       '<circle cx="31" cy="31" r="6" fill="var(--surface)" stroke="currentColor" stroke-width="2.5"/>' +
       '<circle cx="31" cy="20" r="6" fill="currentColor"/>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>自己的棋子連成五顆就贏</b>' +
+        '<div class="hrow">' +
+          '<span class="hstone b"></span><span class="hstone b"></span><span class="hstone b"></span>' +
+          '<span class="hstone b"></span><span class="hstone b"></span></div>' +
+        '<div class="hnote">直的、橫的、斜的都算。你是<em>黑子</em>，先下。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>按住棋盤看清楚，放開才會下</b>' +
+        '<div class="hnote">手指按著的時候，上面會跳出<u>放大鏡</u>顯示你現在指到哪一點。' +
+        '位置不對就手指移一移，<em>放開的那一刻才真的落子</em> —— 不會按錯。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>下錯了就按「悔一步」</b>' +
+        '<div class="hnote">一次退回你和電腦各一步，想按幾次都可以，不扣分</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>兩個電腦強度，從「會擋你」開始</b>' +
+        '<div class="hnote"><b style="display:inline">會擋你</b>：會擋你的四連三連，但擋不住兩邊同時進攻。' +
+        '<br><b style="display:inline">會設陷阱</b>：很難贏，它會提前堵住你的佈局，自己也會設陷阱。</div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = LEVELS.length - 1; i >= 0; i--) {
         var w = App.store('kwin.' + LEVELS[i].key);
@@ -3396,6 +3553,34 @@ var App = (function () {
       '<text x="26.5" y="27" text-anchor="middle" font-size="15" font-weight="700" font-family="monospace" fill="var(--surface)">?</text>' +
       '<path d="M4 42h9M22 42h9M40 42h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>我心裡想了一組數字，你來猜</b>' +
+        '<div class="hnote">猜猜看是哪幾個數字、排在什麼順序</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>每猜一次，我會給你兩個線索</b>' +
+        '<div class="hnote"><em>A</em> ＝ 數字對，位置也對<br><u>B</u> ＝ 數字對，但位置不對</div>' +
+        '<div class="hrow"><span class="hclue">答案</span>' +
+          '<span class="hc">4</span><span class="hc">1</span><span class="hc">7</span></div>' +
+        '<div class="hrow"><span class="hclue">你猜</span>' +
+          '<span class="hc">1</span><span class="hc">4</span><span class="hc">7</span>' +
+          '<span class="harrow">→</span><span class="hclue" style="margin:0"><em style="font-style:normal;color:var(--bull)">1A</em> <u style="text-decoration:none;color:var(--cow)">2B</u></span></div>' +
+        '<div class="hnote">7 的位置對了（1A）；1 和 4 有但位置不對（2B）</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>用線索一路縮小範圍</b>' +
+        '<div class="hnote">如果某一次是「都不對」，那幾個數字就確定不在答案裡，' +
+        '鍵盤上會自動<u>劃掉</u>幫你記住</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>沒有次數限制</b>' +
+        '<div class="hnote">猜幾次都可以，不會失敗。從 3 位數開始，順了再往上加。</div>' +
+      '</div></div>',
+
     score: function () {
       var best = App.store('best.n3') || App.store('best.n4');
       return best ? '最少猜中次數 ' + best + ' 次' : '';

@@ -525,6 +525,42 @@
       '<text x="7" y="36" font-size="10" font-weight="700" font-family="monospace" fill="currentColor">1</text>' +
       '<text x="20" y="11" font-size="10" font-weight="700" font-family="monospace" fill="currentColor">2</text>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>數字＝要連續塗黑幾格</b>' +
+        '<div class="hrow"><span class="hclue">3</span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc on"></span>' +
+          '<span class="hc"></span><span class="hc"></span></div>' +
+        '<div class="hrow"><span class="hclue">1 2</span>' +
+          '<span class="hc on"></span><span class="hc"></span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc"></span></div>' +
+        '<div class="hnote">兩段之間，至少要空一格</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>先塗「怎麼擺都是黑的」那幾格</b>' +
+        '<div class="hrow"><span class="hclue">4</span>' +
+          '<span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc"></span></div>' +
+        '<div class="hrow"><span class="hclue">或</span>' +
+          '<span class="hc"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span><span class="hc on"></span></div>' +
+        '<div class="hrow"><span class="hclue">→</span>' +
+          '<span class="hc"></span><span class="hc maybe"></span><span class="hc maybe"></span><span class="hc maybe"></span><span class="hc"></span></div>' +
+        '<div class="hnote">五格裡要塞四格，不管往左往右擺，<u>中間這三格</u>一定是黑的 —— 先塗這種就對了</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>橫排直排互相夾，就會越來越明朗</b>' +
+        '<div class="hnote">塗掉幾格之後，直排的數字又會告訴你新線索。來回夾幾次，整張圖就出來了。' +
+        '<br><em>每一題都保證推得出來，不用猜。</em></div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>確定是空的，就打叉做記號</b>' +
+        '<div class="hrow">' +
+          '<span class="hc on"></span><span class="hc x"></span><span class="hc"></span><span class="hc x"></span><span class="hc on"></span></div>' +
+        '<div class="hnote">打叉只是給自己看的，不算答案，但很好用 —— 排除掉之後剩下的就清楚了</div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = DIFFS.length - 1; i >= 0; i--) {
         var b = App.store('nbest.' + DIFFS[i].key);

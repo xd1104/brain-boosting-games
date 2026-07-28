@@ -313,6 +313,34 @@
       '<text x="26.5" y="27" text-anchor="middle" font-size="15" font-weight="700" font-family="monospace" fill="var(--surface)">?</text>' +
       '<path d="M4 42h9M22 42h9M40 42h8" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>我心裡想了一組數字，你來猜</b>' +
+        '<div class="hnote">猜猜看是哪幾個數字、排在什麼順序</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>每猜一次，我會給你兩個線索</b>' +
+        '<div class="hnote"><em>A</em> ＝ 數字對，位置也對<br><u>B</u> ＝ 數字對，但位置不對</div>' +
+        '<div class="hrow"><span class="hclue">答案</span>' +
+          '<span class="hc">4</span><span class="hc">1</span><span class="hc">7</span></div>' +
+        '<div class="hrow"><span class="hclue">你猜</span>' +
+          '<span class="hc">1</span><span class="hc">4</span><span class="hc">7</span>' +
+          '<span class="harrow">→</span><span class="hclue" style="margin:0"><em style="font-style:normal;color:var(--bull)">1A</em> <u style="text-decoration:none;color:var(--cow)">2B</u></span></div>' +
+        '<div class="hnote">7 的位置對了（1A）；1 和 4 有但位置不對（2B）</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>用線索一路縮小範圍</b>' +
+        '<div class="hnote">如果某一次是「都不對」，那幾個數字就確定不在答案裡，' +
+        '鍵盤上會自動<u>劃掉</u>幫你記住</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>沒有次數限制</b>' +
+        '<div class="hnote">猜幾次都可以，不會失敗。從 3 位數開始，順了再往上加。</div>' +
+      '</div></div>',
+
     score: function () {
       var best = App.store('best.n3') || App.store('best.n4');
       return best ? '最少猜中次數 ' + best + ' 次' : '';

@@ -224,6 +224,18 @@ var App = (function () {
     else { store('item.' + s.id, items(s.id) + 1); shop('買好了，遊戲裡按「提示」就能用'); }
   }
 
+  /* ---------- 怎麼玩 ----------
+     數獨大家都會，但數織、五子棋的規則不能假設長輩知道。
+     第一次進遊戲自動跳出來，之後右上角問號隨時可以再看。 */
+  function helpSheet(g) {
+    if (!g || !g.help) return;
+    openSheet(
+      '<h2>怎麼玩 · ' + g.name + '</h2><div class="help">' + g.help + '</div>' +
+      '<button class="btn-main" data-act="ok">知道了，開始玩</button>',
+      function () { closeSheet(); }
+    );
+  }
+
   /* ---------- 路由 ---------- */
   function route() {
     if (current && current.unmount) current.unmount();
@@ -241,13 +253,23 @@ var App = (function () {
         '<div class="gamebar">' +
           '<button class="iconbtn" id="backBtn" aria-label="回到大廳">&#8592;</button>' +
           '<div class="barslot" id="barslot"></div>' +
+          (g.help ? '<button class="iconbtn" id="helpBtn" aria-label="怎麼玩">?</button>' : '') +
         '</div>' +
         '<div class="gamebody" id="gamebody"></div>' +
       '</div>';
 
     document.getElementById('backBtn').addEventListener('click', function () { location.hash = ''; });
+    if (g.help) {
+      document.getElementById('helpBtn').addEventListener('click', function () { helpSheet(g); });
+    }
     current = g;
     g.mount(document.getElementById('gamebody'), document.getElementById('barslot'));
+
+    /* 第一次玩這款就自動說明一次，看過就不再擋路 */
+    if (g.help && store('seen.' + g.id) !== '1') {
+      store('seen.' + g.id, '1');
+      helpSheet(g);
+    }
   }
 
   /* ---------- 啟動 ---------- */

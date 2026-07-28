@@ -632,6 +632,32 @@
       '<circle cx="31" cy="31" r="6" fill="var(--surface)" stroke="currentColor" stroke-width="2.5"/>' +
       '<circle cx="31" cy="20" r="6" fill="currentColor"/>' +
       '</svg>',
+    help:
+      '<div class="hstep"><span class="hnum">1</span><div class="hbody">' +
+        '<b>自己的棋子連成五顆就贏</b>' +
+        '<div class="hrow">' +
+          '<span class="hstone b"></span><span class="hstone b"></span><span class="hstone b"></span>' +
+          '<span class="hstone b"></span><span class="hstone b"></span></div>' +
+        '<div class="hnote">直的、橫的、斜的都算。你是<em>黑子</em>，先下。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
+        '<b>按住棋盤看清楚，放開才會下</b>' +
+        '<div class="hnote">手指按著的時候，上面會跳出<u>放大鏡</u>顯示你現在指到哪一點。' +
+        '位置不對就手指移一移，<em>放開的那一刻才真的落子</em> —— 不會按錯。</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>下錯了就按「悔一步」</b>' +
+        '<div class="hnote">一次退回你和電腦各一步，想按幾次都可以，不扣分</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+        '<b>兩個電腦強度，從「會擋你」開始</b>' +
+        '<div class="hnote"><b style="display:inline">會擋你</b>：會擋你的四連三連，但擋不住兩邊同時進攻。' +
+        '<br><b style="display:inline">會設陷阱</b>：很難贏，它會提前堵住你的佈局，自己也會設陷阱。</div>' +
+      '</div></div>',
+
     score: function () {
       for (var i = LEVELS.length - 1; i >= 0; i--) {
         var w = App.store('kwin.' + LEVELS[i].key);
