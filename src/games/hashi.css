@@ -1,0 +1,117 @@
+/* ============ 數橋 ============ */
+.h-wrap {
+  flex: 1 1 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 10px;
+  min-height: 0;
+}
+
+.h-board {
+  display: grid;
+  width: 100%;
+  max-width: min(100%, 64dvh);
+  aspect-ratio: 1;
+  background: var(--surface);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+}
+
+.h-cell { position: relative; }
+
+/* 橋：畫在兩座島中間的格子裡 */
+.h-br { position: absolute; background: var(--accent); }
+.h-br.h1 { left: -1px; right: -1px; top: 50%; height: 3px; transform: translateY(-50%); }
+.h-br.h2a { left: -1px; right: -1px; top: 50%; height: 3px; transform: translateY(-160%); }
+.h-br.h2b { left: -1px; right: -1px; top: 50%; height: 3px; transform: translateY(60%); }
+.h-br.v1 { top: -1px; bottom: -1px; left: 50%; width: 3px; transform: translateX(-50%); }
+.h-br.v2a { top: -1px; bottom: -1px; left: 50%; width: 3px; transform: translateX(-160%); }
+.h-br.v2b { top: -1px; bottom: -1px; left: 50%; width: 3px; transform: translateX(60%); }
+
+.h-isle {
+  position: absolute;
+  inset: 6%;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2.5px solid var(--ink-soft);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  padding: 0;
+  z-index: 2;
+}
+.h-isle.done { border-color: var(--bull); background: var(--bull-soft); color: var(--bull); }
+.h-isle.over { border-color: #D64545; background: #D6454522; color: #D64545; }
+.h-isle.sel {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.h-pad {
+  flex: 0 0 auto;
+  padding: 12px 12px max(12px, env(safe-area-inset-bottom));
+  background: var(--surface);
+  border-top: 1px solid var(--line);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -8px 24px rgba(26,33,48,.06);
+}
+.h-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.h-act {
+  height: 54px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--ink-soft);
+}
+.h-act:active { transform: scale(.97); }
+
+.h-tip { text-align: center; font-size: .84rem; color: var(--cow); margin-top: 9px; min-height: 21px; }
+.h-tip.good { color: var(--bull); }
+.h-loading { text-align: center; color: var(--ink-soft); padding: 40px 20px; font-size: .95rem; }
+
+.h-win { text-align: center; }
+.h-win .cap { font-size: .92rem; color: var(--ink-soft); }
+.h-win .big {
+  font-family: var(--mono);
+  font-size: 38px;
+  font-weight: 700;
+  color: var(--bull);
+  margin: 2px 0 4px;
+  font-variant-numeric: tabular-nums;
+}
+.h-win .steps { font-size: 1rem; font-weight: 700; margin-bottom: 12px; }
+.h-win .earn {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  font-size: .95rem; font-weight: 700;
+  color: var(--cow); background: var(--cow-soft);
+  border-radius: 11px; padding: 9px 12px; margin-bottom: 8px;
+}
+.h-win .earn.bonus { font-size: .85rem; flex-wrap: wrap; }
+
+/* 說明裡的小島 */
+.hisle-demo {
+  width: 30px; height: 30px;
+  border-radius: 50%;
+  border: 2.5px solid var(--ink-soft);
+  display: inline-grid;
+  place-items: center;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: .85rem;
+  flex: 0 0 auto;
+}
+.hisle-demo.ok { border-color: var(--bull); background: var(--bull-soft); color: var(--bull); }
+.hbridge-demo { width: 40px; height: 3px; background: var(--accent); flex: 0 0 auto; }
+.hbridge-demo.dbl {
+  height: 11px;
+  background: linear-gradient(var(--accent) 0 3px, transparent 3px 8px, var(--accent) 8px 11px);
+}
