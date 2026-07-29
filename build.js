@@ -12,6 +12,7 @@ const CSS = [
   'games/sudoku.css',
   'games/nonogram.css',
   'games/hashi.css',
+  'games/shikaku.css',
   'games/gomoku.css'
 ];
 
@@ -21,6 +22,7 @@ const JS = [
   'games/sudoku.js',
   'games/nonogram.js',
   'games/hashi.js',
+  'games/shikaku.js',
   'games/gomoku.js',
   'games/guess.js'
 ];
