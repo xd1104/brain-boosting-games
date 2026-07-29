@@ -1,0 +1,17 @@
+{
+  "name": "動動腦",
+  "short_name": "動動腦",
+  "description": "給爸媽在手機上玩的益智遊戲：數獨、數織、數橋、五子棋、猜數字。",
+  "lang": "zh-Hant",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#EEF0F3",
+  "theme_color": "#EEF0F3",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
