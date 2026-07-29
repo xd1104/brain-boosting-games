@@ -3288,6 +3288,10 @@ var App = (function () {
        第 1 種是主力 —— 一個手勢就好，而且只要方向對，不必點中小圓圈。 */
     var wrap = el('hWrap');
 
+    /* 注意：這裡刻意不用 setPointerCapture。
+       一旦捕捉了指標，瀏覽器會把後續的 click 改派給捕捉的那個元素，
+       於是「點島」的 click 目標變成整個外框、找不到島，變成點了沒反應。
+       改成把 move/up 掛在 document 上，就沒有這個問題。 */
     wrap.addEventListener('pointerdown', function (e) {
       if (S.done) return;
       var b = e.target.closest('.h-isle');
@@ -3296,11 +3300,10 @@ var App = (function () {
       S.dragX = e.clientX; S.dragY = e.clientY;
       S.dragPair = -1;
       S.dragged = false;
-      try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
     });
 
-    wrap.addEventListener('pointermove', function (e) {
-      if (S.done || S.dragFrom === undefined || S.dragFrom < 0) return;
+    function onMove(e) {
+      if (!S || S.done || S.dragFrom < 0) return;
       var dx = e.clientX - S.dragX, dy = e.clientY - S.dragY;
       if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
       S.dragged = true;
@@ -3311,16 +3314,15 @@ var App = (function () {
       S.aim = k < 0 ? -1 : (S.pairs[k].a === S.dragFrom ? S.pairs[k].b : S.pairs[k].a);
       S.sel = S.dragFrom;
       drawBoard();
-    });
+    }
 
-    function endDrag() {
-      if (S.dragFrom === undefined || S.dragFrom < 0) return;
+    function onUp() {
+      if (!S || S.dragFrom < 0) return;
       var did = S.dragged, k = S.dragPair;
       S.dragFrom = -1; S.dragPair = -1; S.aim = -1;
-      if (!did) return;               /* 沒拖動就交給 click 當一般點擊 */
-      /* 撥完之後瀏覽器通常還會補一個 click，要吃掉它。
-         用時間判斷而不是旗標 —— 有些瀏覽器拖曳後不發 click，
-         旗標會一直留著，害下一次正常的點擊被吃掉。 */
+      if (!did) return;               /* 沒撥動就交給 click 當一般點擊 */
+      /* 撥完瀏覽器通常還會補一個 click，要吃掉它。用時間判斷而不是旗標 ——
+         有些瀏覽器拖曳後根本不發 click，旗標會留著把下一次正常點擊吃掉。 */
       S.dragEndAt = Date.now();
       if (k < 0) { S.sel = -1; tip('那個方向沒有可以連的島'); drawBoard(); return; }
       addBridge(k);
@@ -3328,10 +3330,20 @@ var App = (function () {
       drawBoard();
       checkWin();
     }
-    wrap.addEventListener('pointerup', endDrag);
-    wrap.addEventListener('pointercancel', function () {
+
+    function onCancel() {
+      if (!S) return;
       S.dragFrom = -1; S.dragPair = -1; S.aim = -1; drawBoard();
-    });
+    }
+
+    document.addEventListener('pointermove', onMove);
+    document.addEventListener('pointerup', onUp);
+    document.addEventListener('pointercancel', onCancel);
+    S.detach = function () {
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onUp);
+      document.removeEventListener('pointercancel', onCancel);
+    };
 
     wrap.addEventListener('click', function (e) {
       if (Date.now() - (S.dragEndAt || 0) < 350) return;
@@ -3396,6 +3408,7 @@ var App = (function () {
 
   function unmount() {
     stopClock();
+    if (S && S.detach) S.detach();
     if (S && !S.counted && !S.done) {
       var any = false;
       for (var i = 0; i < S.counts.length; i++) if (S.counts[i]) any = true;
