@@ -1627,7 +1627,7 @@ var App = (function () {
              '<button data-setfs="2" class="' + (store('fs') === '2' ? 'on' : '') + '">大</button>' +
            '</span>' +
          '</div>' +
-         '<div class="ver">版本 ==VERSION==</div>' +
+         '<div class="ver">版本 d0e490b</div>' +
        '</div>';
 
     appEl.innerHTML = h;
@@ -4131,6 +4131,7 @@ var App = (function () {
       if (p < 0) return;
       S.dragFrom = p;
       S.touch = [p];
+      S.axis = null;
       S.drag = boxOf(S.touch);
       S.moved = false;
       S.sx = e.clientX; S.sy = e.clientY;
@@ -4138,12 +4139,28 @@ var App = (function () {
       paintDrag();
     });
 
+    /* 加一格進來，順便判斷手指是「直直劃」還是「轉彎」還是「斜著拉」。
+       轉彎＝改變方向，不是要框一個方塊 —— 所以從轉彎處重新起一條線，
+       不然往上再往右會多補一個你根本沒碰到的角。 */
     function sample(x, y, own) {
       var p = cellFrom(x, y);
       if (p < 0) return false;
       if (S.touch.indexOf(p) > -1) return false;
       if (!wellInside(p, x, y)) return false;
       if (own[p] >= 0) return false;      /* 已經有主的格子跳過 */
+
+      var last = S.touch[S.touch.length - 1];
+      var dr = Math.floor(p / S.W) - Math.floor(last / S.W);
+      var dc = (p % S.W) - (last % S.W);
+
+      if (dr !== 0 && dc !== 0) {
+        S.axis = 'box';                   /* 斜著拉：本來就是要框一塊長方形 */
+      } else if (S.axis !== 'box') {
+        var dir = dc !== 0 ? 'h' : 'v';
+        if (S.axis && S.axis !== dir) S.touch = [last];   /* 轉彎：從這裡重新起一條 */
+        S.axis = dir;
+      }
+
       S.touch.push(p);
       return true;
     }
@@ -4170,7 +4187,10 @@ var App = (function () {
       S.lx = e.clientX; S.ly = e.clientY;
 
       if (!added) return;
-      S.drag = boxOf(S.touch);
+      /* 斜著拉是「從起點框到現在這格」；直直劃就只算劃過的那一條 */
+      S.drag = S.axis === 'box'
+        ? boxOf([S.dragFrom, S.touch[S.touch.length - 1]])
+        : boxOf(S.touch);
       paintDrag();
     }
 
@@ -4304,8 +4324,9 @@ var App = (function () {
 
       '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
         '<b>手指劃過想要的那幾格，就圈成一塊</b>' +
-        '<div class="hnote">只算<u>手指真的劃過</u>的格子 —— 劃一橫排就是一橫排，' +
-        '不會連旁邊一起框進去。已經圈好的格子會自動跳過。' +
+        '<div class="hnote"><u>直直劃</u>一排就是那一排，中途<u>轉彎</u>就從轉彎處重新算，' +
+        '不會多圈你沒碰到的格子。<br>要圈成方形的那種，<u>斜著拉</u>到對角就好。' +
+        '<br>已經圈好的格子會自動跳過。' +
         '<br>圈錯了（格數不對、或圈到兩個數字）那塊會變紅。<br>' +
         '<u>點一下已經圈好的塊就拆掉；點空白格就圈那一格</u>（數字是 1 的就是這樣圈）。</div>' +
       '</div></div>' +
