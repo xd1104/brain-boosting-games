@@ -451,8 +451,19 @@
       S.drag = boxOf(S.touch);
       S.moved = false;
       S.sx = e.clientX; S.sy = e.clientY;
+      S.lx = e.clientX; S.ly = e.clientY;
       drawGrid();
     });
+
+    function sample(x, y, own) {
+      var p = cellFrom(x, y);
+      if (p < 0) return false;
+      if (S.touch.indexOf(p) > -1) return false;
+      if (!wellInside(p, x, y)) return false;
+      if (own[p] >= 0) return false;      /* 已經有主的格子跳過 */
+      S.touch.push(p);
+      return true;
+    }
 
     function onMove(e) {
       if (!S || S.done || S.dragFrom < 0) return;
@@ -460,15 +471,22 @@
          手指抖個幾 px 跨過格線就被當成拖，會圈出沒想要的一塊 */
       if (Math.abs(e.clientX - S.sx) > 10 || Math.abs(e.clientY - S.sy) > 10) S.moved = true;
 
-      var p = cellFrom(e.clientX, e.clientY);
-      if (p < 0) return;
-      /* 只把「手指真的劃過」的格子加進來，而且已經有主的格子直接略過 ——
-         這樣經過別塊旁邊不會把它整個框進來 */
-      if (S.touch.indexOf(p) > -1) return;
-      if (!wellInside(p, e.clientX, e.clientY)) return;
-      if (cellOwner()[p] >= 0) return;
+      var own = cellOwner();
+      var lx = S.lx === undefined ? e.clientX : S.lx;
+      var ly = S.ly === undefined ? e.clientY : S.ly;
 
-      S.touch.push(p);
+      /* 手指劃快一點時，瀏覽器兩次 pointermove 之間可能已經跨過好幾格。
+         所以要沿著這一小段路補點取樣，不能只看事件當下那一點，
+         否則中間的格子會被漏掉、圈出來的比想要的短。 */
+      var dx = e.clientX - lx, dy = e.clientY - ly;
+      var steps = Math.min(24, Math.max(1, Math.ceil(Math.hypot(dx, dy) / 6)));
+      var added = false;
+      for (var i = 1; i <= steps; i++) {
+        if (sample(lx + dx * i / steps, ly + dy * i / steps, own)) added = true;
+      }
+      S.lx = e.clientX; S.ly = e.clientY;
+
+      if (!added) return;
       S.drag = boxOf(S.touch);
       drawGrid();
     }

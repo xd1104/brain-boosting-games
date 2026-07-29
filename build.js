@@ -2,6 +2,7 @@
    目的：爸媽只要一個連結、一個主畫面圖示 */
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 
 const SRC = path.join(__dirname, 'src');
 const OUT = path.join(__dirname, 'index.html');
@@ -34,9 +35,14 @@ function build() {
   const js = JS.map(f => '/* === ' + f + ' === */\n' + read(f)).join('\n\n')
     + '\n\nApp.boot();\n';
 
+  /* 版本編號＝內容的雜湊。畫面上看得到，就能一眼確認手機拿到的是不是新版
+     （瀏覽器快取住舊版時，光看畫面猜不出來） */
+  const ver = crypto.createHash('sha1').update(css + js).digest('hex').slice(0, 7);
+
   const out = read('template.html')
     .replace('/*==STYLES==*/', () => '\n' + css + '\n')
-    .replace('/*==SCRIPTS==*/', () => '\n' + js + '\n');
+    .replace('/*==SCRIPTS==*/', () => '\n' + js + '\n')
+    .replace(/==VERSION==/g, () => ver);
 
   fs.writeFileSync(OUT, out, 'utf8');
   return out.length;

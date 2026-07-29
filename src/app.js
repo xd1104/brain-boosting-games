@@ -178,6 +178,7 @@ var App = (function () {
              '<button data-setfs="2" class="' + (store('fs') === '2' ? 'on' : '') + '">大</button>' +
            '</span>' +
          '</div>' +
+         '<div class="ver">版本 ==VERSION==</div>' +
        '</div>';
 
     appEl.innerHTML = h;
