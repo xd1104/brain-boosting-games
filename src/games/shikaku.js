@@ -224,6 +224,31 @@
     }
   }
 
+  /* 拖曳中只改 class，不重建 DOM。
+     重建會把手指正按著的那個元素砍掉，真實觸控會因此收到 pointercancel、
+     整個拖曳被中斷 —— 用滑鼠或程式模擬都測不出來，只有真手指會中。 */
+  function paintDrag() {
+    var g = el('qGrid');
+    if (!g) return;
+    var W = S.W, own = cellOwner();
+    var clash = {}, clashing = false;
+    if (S.drag) {
+      var list = hits(S.drag);
+      for (var q = 0; q < list.length; q++) clash[list[q]] = 1;
+      clashing = list.length > 0;
+    }
+    var kids = g.children;
+    for (var p = 0; p < kids.length; p++) {
+      var x = p % W, y = Math.floor(p / W);
+      var inDrag = !!(S.drag && x >= S.drag[0] && x < S.drag[0] + S.drag[2] &&
+                      y >= S.drag[1] && y < S.drag[1] + S.drag[3]);
+      var c = kids[p];
+      c.classList.toggle('drag', inDrag);
+      c.classList.toggle('no', inDrag && clashing);
+      c.classList.toggle('clash', own[p] >= 0 && !!clash[own[p]]);
+    }
+  }
+
   function draw() { drawBar(); drawGrid(); }
 
   /* ================= 操作 ================= */
@@ -452,7 +477,7 @@
       S.moved = false;
       S.sx = e.clientX; S.sy = e.clientY;
       S.lx = e.clientX; S.ly = e.clientY;
-      drawGrid();
+      paintDrag();
     });
 
     function sample(x, y, own) {
@@ -488,7 +513,7 @@
 
       if (!added) return;
       S.drag = boxOf(S.touch);
-      drawGrid();
+      paintDrag();
     }
 
     function onUp() {
@@ -522,7 +547,13 @@
       checkWin();
     }
 
-    function onCancel() { if (!S) return; S.drag = null; S.dragFrom = -1; S.touch = []; drawGrid(); }
+    /* 手勢被系統中斷時，已經劃好的就直接算數，不要默默丟掉讓人白劃一場 */
+    function onCancel() {
+      if (!S || S.dragFrom < 0) return;
+      if (S.moved) { onUp(); return; }
+      S.drag = null; S.dragFrom = -1; S.touch = [];
+      drawGrid();
+    }
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
