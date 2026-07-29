@@ -8,8 +8,8 @@
   var ME = 1, AI = 2;
 
   var LEVELS = [
-    { key: 'l2', name: '會擋你',   sub: '普通', coin: 25 },
-    { key: 'l3', name: '會設陷阱', sub: '高手', coin: 50 }
+    { key: 'l2', name: '普通', sub: '會擋你',   coin: 25 },
+    { key: 'l3', name: '高手', sub: '會設陷阱', coin: 50 }
   ];
 
   var DIRS = [[0, 1], [1, 0], [1, 1], [1, -1]];
@@ -653,9 +653,9 @@
       '</div></div>' +
 
       '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
-        '<b>兩個電腦強度，從「會擋你」開始</b>' +
-        '<div class="hnote"><b style="display:inline">會擋你</b>：會擋你的四連三連，但擋不住兩邊同時進攻。' +
-        '<br><b style="display:inline">會設陷阱</b>：很難贏，它會提前堵住你的佈局，自己也會設陷阱。</div>' +
+        '<b>兩個電腦強度，先從「普通」開始</b>' +
+        '<div class="hnote"><b style="display:inline">普通</b>：會擋你的四連三連，但擋不住兩邊同時進攻。' +
+        '<br><b style="display:inline">高手</b>：很難贏，它會提前堵住你的佈局，自己也會設陷阱。</div>' +
       '</div></div>',
 
     score: function () {
