@@ -88,6 +88,10 @@
   line-height: 1;
 }
 .q-cell.drag { outline: 3px solid var(--accent); outline-offset: -3px; z-index: 3; }
+/* 擋路的舊塊：拖曳中就先閃一下，讓人知道圈不成 */
+.q-cell.clash { outline: 3px solid #D64545; outline-offset: -3px; z-index: 2; }
+/* 圈不成的預覽框改成紅色 */
+.q-cell.drag.no { outline-color: #D64545; }
 
 .q-pad {
   flex: 0 0 auto;

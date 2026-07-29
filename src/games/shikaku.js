@@ -187,11 +187,20 @@
 
     var okCache = S.rects.map(rectOk);
 
+    /* 拖曳中就先標出擋路的舊塊，放手前就知道圈不成，不會白圈 */
+    var clash = {}, clashing = false;
+    if (S.drag) {
+      var list = hits(S.drag);
+      for (var q = 0; q < list.length; q++) clash[list[q]] = 1;
+      clashing = list.length > 0;
+    }
+
     var h = '';
     for (var p = 0; p < W * W; p++) {
       var x = p % W, y = Math.floor(p / W);
       var o = own[p];
       var cls = 'q-cell';
+      if (o >= 0 && clash[o]) cls += ' clash';
       if (o >= 0) {
         cls += okCache[o] ? ' t' + (o % 4) : ' bad';
         if (y === 0 || own[(y - 1) * W + x] !== o) cls += ' eT';
@@ -199,7 +208,9 @@
         if (x === 0 || own[y * W + (x - 1)] !== o) cls += ' eL';
         if (x === W - 1 || own[y * W + (x + 1)] !== o) cls += ' eR';
       }
-      if (S.drag && x >= S.drag[0] && x < S.drag[0] + S.drag[2] && y >= S.drag[1] && y < S.drag[1] + S.drag[3]) cls += ' drag';
+      if (S.drag && x >= S.drag[0] && x < S.drag[0] + S.drag[2] && y >= S.drag[1] && y < S.drag[1] + S.drag[3]) {
+        cls += clashing ? ' drag no' : ' drag';
+      }
       var inner = clueAt[p] !== undefined ? '<span class="num">' + clueAt[p] + '</span>' : '';
       h += '<button class="' + cls + '" data-p="' + p + '">' + inner + '</button>';
     }
@@ -217,17 +228,23 @@
 
   /* ================= 操作 ================= */
 
-  function addRect(r) {
-    /* 蓋到舊的就把舊的清掉，直接重畫比較直覺 */
-    var keep = [];
+  function hits(r) {
+    var out = [];
     for (var i = 0; i < S.rects.length; i++) {
       var o = S.rects[i];
       var overlap = !(o[0] >= r[0] + r[2] || r[0] >= o[0] + o[2] || o[1] >= r[1] + r[3] || r[1] >= o[1] + o[3]);
-      if (!overlap) keep.push(o);
+      if (overlap) out.push(i);
     }
-    keep.push(r);
-    S.rects = keep;
+    return out;
+  }
+
+  /* 重疊就不給圈，而不是把舊的吃掉。
+     手指滑過別塊就讓人家辛苦圈好的消失，對長輩太兇了 —— 寧可多點一下拆掉 */
+  function addRect(r) {
+    if (hits(r).length) return false;
+    S.rects.push(r);
     S.moves++;
+    return true;
   }
 
   function removeAt(p) {
@@ -393,14 +410,15 @@
 
     var wrap = el('qWrap');
 
+    /* 直接問瀏覽器「這個座標上是哪一格」。
+       不要用「棋盤寬 ÷ 格數」去除 —— 棋盤有邊框和格線間隙，
+       那樣算越往右下角偏得越多，手指明明在這格卻選到隔壁。 */
     function cellFrom(x, y) {
-      var g = el('qGrid');
-      if (!g) return -1;
-      var b = g.getBoundingClientRect();
-      var s = b.width / S.W;
-      var cx = Math.floor((x - b.left) / s), cy = Math.floor((y - b.top) / s);
-      if (cx < 0 || cy < 0 || cx >= S.W || cy >= S.W) return -1;
-      return cy * S.W + cx;
+      var e = document.elementFromPoint(x, y);
+      if (!e) return -1;
+      var c = e.closest ? e.closest('.q-cell') : null;
+      if (!c || !el('qGrid').contains(c)) return -1;
+      return parseInt(c.dataset.p, 10);
     }
 
     function spanOf(a, b) {
@@ -415,6 +433,7 @@
       S.dragFrom = p;
       S.drag = spanOf(p, p);
       S.moved = false;
+      S.sx = e.clientX; S.sy = e.clientY;
       drawGrid();
     });
 
@@ -422,7 +441,9 @@
       if (!S || S.done || S.dragFrom < 0) return;
       var p = cellFrom(e.clientX, e.clientY);
       if (p < 0) return;
-      if (p !== S.dragFrom) S.moved = true;
+      /* 要移動夠遠才算「拖曳」。只看有沒有換格子的話，
+         手指抖個幾 px 跨過格線就被當成拖，會圈出沒想要的一塊 */
+      if (Math.abs(e.clientX - S.sx) > 10 || Math.abs(e.clientY - S.sy) > 10) S.moved = true;
       var sp = spanOf(S.dragFrom, p);
       if (S.drag && sp[0] === S.drag[0] && sp[1] === S.drag[1] && sp[2] === S.drag[2] && sp[3] === S.drag[3]) return;
       S.drag = sp;
@@ -431,17 +452,18 @@
 
     function onUp() {
       if (!S || S.dragFrom < 0) return;
-      var r = S.drag, moved = S.moved;
+      var r = S.drag, moved = S.moved, from = S.dragFrom;
       S.drag = null; S.dragFrom = -1;
       if (!r) { drawGrid(); return; }
 
       if (!moved) {
         /* 沒拖動＝點一下：點已圈好的就拆掉，點空的就圈一格。
-           一定要能圈一格 —— 數字是 1 的格子只能自己成一塊 */
+           一定要能圈一格 —— 數字是 1 的格子只能自己成一塊。
+           用按下去的那一格，不是拖曳範圍的角落 */
         S.dragEndAt = Date.now();
-        var p = r[1] * S.W + r[0];
+        var p = from;
         if (removeAt(p)) { tip(''); drawGrid(); return; }
-        addRect([r[0], r[1], 1, 1]);
+        addRect([p % S.W, Math.floor(p / S.W), 1, 1]);
         tip('');
         drawGrid();
         checkWin();
@@ -449,7 +471,11 @@
       }
 
       S.dragEndAt = Date.now();
-      addRect(r);
+      if (!addRect(r)) {
+        tip('這裡跟已經圈好的塊重疊了 —— 先點一下那塊把它拆掉');
+        drawGrid();
+        return;
+      }
       tip('');
       drawGrid();
       checkWin();
@@ -549,6 +575,7 @@
       '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
         '<b>手指從一角拖到另一角，就圈出一塊</b>' +
         '<div class="hnote">不用點準格子，拖出範圍就好。' +
+        '<br>圈到已經圈好的塊上面會被擋下來（那塊會閃紅色），<u>不會把它弄不見</u>。' +
         '<br>圈錯了（格數不對、或圈到兩個數字）那塊會變紅。<br>' +
         '<u>點一下已經圈好的塊就拆掉；點空白格就圈那一格</u>（數字是 1 的就是這樣圈）。</div>' +
       '</div></div>' +
