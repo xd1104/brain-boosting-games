@@ -20,6 +20,13 @@
 }
 
 .h-cell { position: relative; }
+/* 有橋的格子本身可以點 —— 點一下拆一座，不用再繞一圈 */
+.h-cell.hasbr { cursor: pointer; }
+.h-cell.hasbr::after {
+  content: "";
+  position: absolute;
+  inset: -2px;                     /* 把可點範圍撐大一點，手指才好按 */
+}
 
 /* 橋：畫在兩座島中間的格子裡 */
 .h-br { position: absolute; background: var(--accent); }
@@ -53,6 +60,16 @@
   color: var(--on-accent);
   box-shadow: 0 0 0 4px var(--accent-soft);
 }
+/* 撥的時候，正要連到的那座島先亮起來 */
+.h-isle.aim {
+  border-color: var(--accent);
+  border-style: dashed;
+  background: var(--accent-soft);
+  color: var(--ink);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+
+.h-board { touch-action: none; }
 
 .h-pad {
   flex: 0 0 auto;

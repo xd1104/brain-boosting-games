@@ -300,8 +300,8 @@
     var isleAt = {};
     for (var i = 0; i < S.isles.length; i++) isleAt[S.isles[i].r * W + S.isles[i].c] = i;
 
-    /* 先把橋畫進格子裡 */
-    var brs = {};
+    /* 先把橋畫進格子裡。橋所在的格子記下屬於哪一組，點它就能拆 */
+    var brs = {}, brPair = {};
     for (var k = 0; k < S.pairs.length; k++) {
       var n = S.counts[k];
       if (!n) continue;
@@ -309,10 +309,12 @@
       if (A.r === B.r) {
         for (var c = Math.min(A.c, B.c) + 1; c < Math.max(A.c, B.c); c++) {
           brs[A.r * W + c] = n === 1 ? '<i class="h-br h1"></i>' : '<i class="h-br h2a"></i><i class="h-br h2b"></i>';
+          brPair[A.r * W + c] = k;
         }
       } else {
         for (var r = Math.min(A.r, B.r) + 1; r < Math.max(A.r, B.r); r++) {
           brs[r * W + A.c] = n === 1 ? '<i class="h-br v1"></i>' : '<i class="h-br v2a"></i><i class="h-br v2b"></i>';
+          brPair[r * W + A.c] = k;
         }
       }
     }
@@ -325,11 +327,14 @@
         var want = S.deg[idx], got = degNow(idx);
         var cls = 'h-isle';
         if (idx === S.sel) cls += ' sel';
+        else if (idx === S.aim) cls += ' aim';
         else if (got === want) cls += ' done';
         else if (got > want) cls += ' over';
         inner += '<button class="' + cls + '" data-i="' + idx + '" aria-label="島 ' + want + '">' + want + '</button>';
       }
-      h += '<div class="h-cell">' + inner + '</div>';
+      var cellCls = 'h-cell' + (brPair[p] !== undefined ? ' hasbr' : '');
+      var attr = brPair[p] !== undefined ? ' data-br="' + brPair[p] + '"' : '';
+      h += '<div class="' + cellCls + '"' + attr + '>' + inner + '</div>';
     }
     b.innerHTML = h;
   }
@@ -344,6 +349,29 @@
     return -1;
   }
 
+  /* 蓋一座上去（最多兩座）。回傳有沒有成功 */
+  function addBridge(k) {
+    if (S.counts[k] >= 2) { tip('兩座島之間最多兩座橋'); return false; }
+    if (S.counts[k] === 0) {
+      for (var q = 0; q < S.cross[k].length; q++) {
+        if (S.counts[S.cross[k][q]] > 0) { tip('這座橋會跟別的橋交叉，不能蓋'); return false; }
+      }
+    }
+    S.counts[k]++;
+    S.moves++;
+    tip('');
+    return true;
+  }
+
+  /* 拆一座 */
+  function removeBridge(k) {
+    if (S.counts[k] <= 0) return false;
+    S.counts[k]--;
+    S.moves++;
+    tip('');
+    return true;
+  }
+
   function tapIsle(i) {
     if (S.done) return;
     if (S.sel < 0) { S.sel = i; tip(''); drawBoard(); return; }
@@ -352,19 +380,10 @@
     var k = pairIndex(S.sel, i);
     if (k < 0) { S.sel = i; tip('這兩座島之間不能直接連 —— 要同一橫排或同一直排，中間不能隔著別的島'); drawBoard(); return; }
 
-    var next = (S.counts[k] + 1) % 3;
-    if (next > 0 && S.counts[k] === 0) {
-      /* 新蓋一座橋，先看會不會跟別人交叉 */
-      for (var q = 0; q < S.cross[k].length; q++) {
-        if (S.counts[S.cross[k][q]] > 0) {
-          tip('這座橋會跟別的橋交叉，不能蓋');
-          return;
-        }
-      }
-    }
-    S.counts[k] = next;
-    S.moves++;
-    tip('');
+    /* 點到底了就從頭來，維持原本「點三下拆掉」的習慣 */
+    if (S.counts[k] >= 2) { S.counts[k] = 0; S.moves++; tip(''); }
+    else addBridge(k);
+
     drawBoard();
     checkWin();
   }
@@ -470,7 +489,25 @@
         }
       }
 
+      /* 每座島往四個方向各對應哪一組橋，撥的時候要用 */
+      S.dirPair = [];
+      for (i = 0; i < S.isles.length; i++) S.dirPair.push([-1, -1, -1, -1]);
+      for (i = 0; i < S.pairs.length; i++) {
+        var PA = S.isles[S.pairs[i].a], PB = S.isles[S.pairs[i].b];
+        if (PA.r === PB.r) {
+          if (PB.c > PA.c) { S.dirPair[S.pairs[i].a][0] = i; S.dirPair[S.pairs[i].b][2] = i; }
+          else { S.dirPair[S.pairs[i].a][2] = i; S.dirPair[S.pairs[i].b][0] = i; }
+        } else {
+          if (PB.r > PA.r) { S.dirPair[S.pairs[i].a][1] = i; S.dirPair[S.pairs[i].b][3] = i; }
+          else { S.dirPair[S.pairs[i].a][3] = i; S.dirPair[S.pairs[i].b][1] = i; }
+        }
+      }
+
       S.sel = -1;
+      S.aim = -1;
+      S.dragFrom = -1;
+      S.dragPair = -1;
+      S.dragEndAt = 0;
       S.moves = 0;
       S.elapsed = 0;
       S.counted = false;
@@ -537,13 +574,75 @@
     var dk = App.store('hdiff'), d = DIFFS[0];
     for (var i = 0; i < DIFFS.length; i++) if (DIFFS[i].key === dk) d = DIFFS[i];
 
-    S = { diff: d, W: d.W, isles: [], deg: [], pairs: [], counts: [], cross: [],
-          sel: -1, moves: 0, elapsed: 0, t0: 0, counted: false, done: true };
+    S = { diff: d, W: d.W, isles: [], deg: [], pairs: [], counts: [], cross: [], dirPair: [],
+          sel: -1, aim: -1, dragFrom: -1, dragPair: -1, dragEndAt: 0,
+          moves: 0, elapsed: 0, t0: 0, counted: false, done: true };
 
-    el('hWrap').addEventListener('click', function (e) {
+    /* ---- 三種操作，習慣哪種用哪種 ----
+       1. 從島往一個方向撥：直接蓋一座（不用點準對面那座島）
+       2. 點橋：拆掉一座
+       3. 點兩座島：跟原本一樣
+       第 1 種是主力 —— 一個手勢就好，而且只要方向對，不必點中小圓圈。 */
+    var wrap = el('hWrap');
+
+    wrap.addEventListener('pointerdown', function (e) {
+      if (S.done) return;
       var b = e.target.closest('.h-isle');
-      if (b) tapIsle(parseInt(b.dataset.i, 10));
-      else { S.sel = -1; drawBoard(); }
+      if (!b) return;
+      S.dragFrom = parseInt(b.dataset.i, 10);
+      S.dragX = e.clientX; S.dragY = e.clientY;
+      S.dragPair = -1;
+      S.dragged = false;
+      try { wrap.setPointerCapture(e.pointerId); } catch (err) {}
+    });
+
+    wrap.addEventListener('pointermove', function (e) {
+      if (S.done || S.dragFrom === undefined || S.dragFrom < 0) return;
+      var dx = e.clientX - S.dragX, dy = e.clientY - S.dragY;
+      if (Math.abs(dx) < 12 && Math.abs(dy) < 12) return;
+      S.dragged = true;
+      var d = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 0 : 2) : (dy > 0 ? 1 : 3);
+      var k = S.dirPair[S.dragFrom][d];
+      if (k === S.dragPair) return;
+      S.dragPair = k;
+      S.aim = k < 0 ? -1 : (S.pairs[k].a === S.dragFrom ? S.pairs[k].b : S.pairs[k].a);
+      S.sel = S.dragFrom;
+      drawBoard();
+    });
+
+    function endDrag() {
+      if (S.dragFrom === undefined || S.dragFrom < 0) return;
+      var did = S.dragged, k = S.dragPair;
+      S.dragFrom = -1; S.dragPair = -1; S.aim = -1;
+      if (!did) return;               /* 沒拖動就交給 click 當一般點擊 */
+      /* 撥完之後瀏覽器通常還會補一個 click，要吃掉它。
+         用時間判斷而不是旗標 —— 有些瀏覽器拖曳後不發 click，
+         旗標會一直留著，害下一次正常的點擊被吃掉。 */
+      S.dragEndAt = Date.now();
+      if (k < 0) { S.sel = -1; tip('那個方向沒有可以連的島'); drawBoard(); return; }
+      addBridge(k);
+      S.sel = -1;
+      drawBoard();
+      checkWin();
+    }
+    wrap.addEventListener('pointerup', endDrag);
+    wrap.addEventListener('pointercancel', function () {
+      S.dragFrom = -1; S.dragPair = -1; S.aim = -1; drawBoard();
+    });
+
+    wrap.addEventListener('click', function (e) {
+      if (Date.now() - (S.dragEndAt || 0) < 350) return;
+      var b = e.target.closest('.h-isle');
+      if (b) { tapIsle(parseInt(b.dataset.i, 10)); return; }
+      var cell = e.target.closest('.h-cell[data-br]');
+      if (cell) {
+        if (S.done) return;
+        removeBridge(parseInt(cell.dataset.br, 10));
+        S.sel = -1;
+        drawBoard();
+        return;
+      }
+      S.sel = -1; drawBoard();
     });
 
     el('hUndoAll').addEventListener('click', function () {
@@ -631,13 +730,19 @@
       '</div></div>' +
 
       '<div class="hstep"><span class="hnum">2</span><div class="hbody">' +
-        '<b>點兩座島，就會蓋橋</b>' +
-        '<div class="hnote">先點一座島（會變藍），再點<u>同一排或同一列</u>的另一座島。' +
-        '再點一次會變成兩座橋，第三次就拆掉。<br>' +
-        '橋只能走直的橫的，<em>兩島之間最多兩座</em>，而且不能跟別的橋交叉。</div>' +
+        '<b>手指從島上往那個方向撥一下，橋就出來了</b>' +
+        '<div class="hnote"><em>不用點準對面那座島</em> —— 只要方向對，它自己會找到。' +
+        '想要兩座橋就再撥一次。<br>' +
+        '橋只能走直的橫的，兩島之間最多兩座，而且不能跟別的橋交叉。</div>' +
       '</div></div>' +
 
       '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
+        '<b>要拆掉就點那座橋</b>' +
+        '<div class="hnote">直接點橋身，一次拆一座。<br>' +
+        '（也可以用點的蓋：點一座島再點另一座，習慣哪種都行）</div>' +
+      '</div></div>' +
+
+      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
         '<b>數字接夠了，島會變綠</b>' +
         '<div class="hrow">' +
           '<span class="hisle-demo ok">2</span>' +
@@ -646,7 +751,7 @@
         '<div class="hnote">接太多會變紅，再點一次就拆掉</div>' +
       '</div></div>' +
 
-      '<div class="hstep"><span class="hnum">4</span><div class="hbody">' +
+      '<div class="hstep"><span class="hnum">5</span><div class="hbody">' +
         '<b>最後所有島要連成一整塊</b>' +
         '<div class="hnote">這是最容易漏掉的一點 —— 數字全部接對了，但如果分成兩群互不相通，還不算完成。' +
         '<br>真的卡住就按下面的<em>「卡住了？」</em>，它會指一座「只有一種連法」的島給你看。</div>' +
