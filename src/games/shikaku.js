@@ -341,6 +341,7 @@
       S.rects = [];
       S.drag = null;
       S.dragFrom = -1;
+      S.touch = [];
       S.dragEndAt = 0;
       S.moves = 0;
       S.elapsed = 0;
@@ -405,7 +406,7 @@
     var dk = App.store('qdiff'), d = DIFFS[0];
     for (var i = 0; i < DIFFS.length; i++) if (DIFFS[i].key === dk) d = DIFFS[i];
 
-    S = { diff: d, W: d.W, clues: [], rects: [], drag: null, dragFrom: -1, dragEndAt: 0,
+    S = { diff: d, W: d.W, clues: [], rects: [], drag: null, dragFrom: -1, touch: [], dragEndAt: 0,
           moves: 0, elapsed: 0, t0: 0, counted: false, done: true };
 
     var wrap = el('qWrap');
@@ -421,9 +422,24 @@
       return parseInt(c.dataset.p, 10);
     }
 
-    function spanOf(a, b) {
-      var ax = a % S.W, ay = Math.floor(a / S.W), bx = b % S.W, by = Math.floor(b / S.W);
-      return [Math.min(ax, bx), Math.min(ay, by), Math.abs(ax - bx) + 1, Math.abs(ay - by) + 1];
+    /* 手指劃過的那些格子，外框有多大 */
+    function boxOf(list) {
+      var x1 = 1e9, y1 = 1e9, x2 = -1, y2 = -1;
+      for (var i = 0; i < list.length; i++) {
+        var x = list[i] % S.W, y = Math.floor(list[i] / S.W);
+        if (x < x1) x1 = x; if (x > x2) x2 = x;
+        if (y < y1) y1 = y; if (y > y2) y2 = y;
+      }
+      return [x1, y1, x2 - x1 + 1, y2 - y1 + 1];
+    }
+
+    /* 手指要進到格子中間一點才算劃過，只是擦到邊邊不算 —— 手抖不會多圈一排 */
+    function wellInside(p, x, y) {
+      var c = el('qGrid').children[p];
+      if (!c) return false;
+      var r = c.getBoundingClientRect();
+      var mx = r.width * 0.16, my = r.height * 0.16;
+      return x > r.left + mx && x < r.right - mx && y > r.top + my && y < r.bottom - my;
     }
 
     wrap.addEventListener('pointerdown', function (e) {
@@ -431,7 +447,8 @@
       var p = cellFrom(e.clientX, e.clientY);
       if (p < 0) return;
       S.dragFrom = p;
-      S.drag = spanOf(p, p);
+      S.touch = [p];
+      S.drag = boxOf(S.touch);
       S.moved = false;
       S.sx = e.clientX; S.sy = e.clientY;
       drawGrid();
@@ -439,21 +456,27 @@
 
     function onMove(e) {
       if (!S || S.done || S.dragFrom < 0) return;
-      var p = cellFrom(e.clientX, e.clientY);
-      if (p < 0) return;
       /* 要移動夠遠才算「拖曳」。只看有沒有換格子的話，
          手指抖個幾 px 跨過格線就被當成拖，會圈出沒想要的一塊 */
       if (Math.abs(e.clientX - S.sx) > 10 || Math.abs(e.clientY - S.sy) > 10) S.moved = true;
-      var sp = spanOf(S.dragFrom, p);
-      if (S.drag && sp[0] === S.drag[0] && sp[1] === S.drag[1] && sp[2] === S.drag[2] && sp[3] === S.drag[3]) return;
-      S.drag = sp;
+
+      var p = cellFrom(e.clientX, e.clientY);
+      if (p < 0) return;
+      /* 只把「手指真的劃過」的格子加進來，而且已經有主的格子直接略過 ——
+         這樣經過別塊旁邊不會把它整個框進來 */
+      if (S.touch.indexOf(p) > -1) return;
+      if (!wellInside(p, e.clientX, e.clientY)) return;
+      if (cellOwner()[p] >= 0) return;
+
+      S.touch.push(p);
+      S.drag = boxOf(S.touch);
       drawGrid();
     }
 
     function onUp() {
       if (!S || S.dragFrom < 0) return;
       var r = S.drag, moved = S.moved, from = S.dragFrom;
-      S.drag = null; S.dragFrom = -1;
+      S.drag = null; S.dragFrom = -1; S.touch = [];
       if (!r) { drawGrid(); return; }
 
       if (!moved) {
@@ -481,7 +504,7 @@
       checkWin();
     }
 
-    function onCancel() { if (!S) return; S.drag = null; S.dragFrom = -1; drawGrid(); }
+    function onCancel() { if (!S) return; S.drag = null; S.dragFrom = -1; S.touch = []; drawGrid(); }
 
     document.addEventListener('pointermove', onMove);
     document.addEventListener('pointerup', onUp);
@@ -573,9 +596,9 @@
       '</div></div>' +
 
       '<div class="hstep"><span class="hnum">3</span><div class="hbody">' +
-        '<b>手指從一角拖到另一角，就圈出一塊</b>' +
-        '<div class="hnote">不用點準格子，拖出範圍就好。' +
-        '<br>圈到已經圈好的塊上面會被擋下來（那塊會閃紅色），<u>不會把它弄不見</u>。' +
+        '<b>手指劃過想要的那幾格，就圈成一塊</b>' +
+        '<div class="hnote">只算<u>手指真的劃過</u>的格子 —— 劃一橫排就是一橫排，' +
+        '不會連旁邊一起框進去。已經圈好的格子會自動跳過。' +
         '<br>圈錯了（格數不對、或圈到兩個數字）那塊會變紅。<br>' +
         '<u>點一下已經圈好的塊就拆掉；點空白格就圈那一格</u>（數字是 1 的就是這樣圈）。</div>' +
       '</div></div>' +
